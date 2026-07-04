@@ -7,4 +7,8 @@ userRouters.post("/register", userController.register);
 
 userRouters.post("/login", userController.login);
 
+userRouters.get("/get-me", userController.getMe);
+
+userRouters.get("/logout", userController.logout);
+
 export default userRouters;
