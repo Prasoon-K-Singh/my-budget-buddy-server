@@ -57,10 +57,10 @@ export async function register(req, res) {
 }
 
 export async function login(req, res) {
-  const { email, username, password } = req.body;
+  const { username, password } = req.body;
 
   const user = await userModel.findOne({
-    $or: [{ username }, { email }],
+    $or: [{ username }, { email: username }],
   });
 
   if (!user) {
@@ -92,12 +92,45 @@ export async function login(req, res) {
     user: {
       id: user._id,
       name: {
-        firstname: user.firstname,
-        lastname: user.lastname,
+        firstname: user.name.firstname,
+        lastname: user.name.lastname,
       },
       username: user.username,
       email: user.email,
       role: user.role,
     },
   });
+}
+
+export async function getMe(req, res) {
+  const token = req.headers.cookie?.split("=")[1] || null;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "Token not found",
+    });
+  }
+
+  const decoded = jwt.verify(token, config.JWT_SECRET);
+
+  const user = await userModel.findById(decoded.id);
+
+  res.status(200).json({
+    message: "User fetched successfully",
+    user: {
+      id: user._id,
+      name: {
+        firstname: user.name.firstname,
+        lastname: user.name.lastname,
+      },
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    },
+  });
+}
+
+export async function logout(req, res) {
+  res.clearCookie("token");
+  res.status(200).json({ message: "User logged out successfully" });
 }
