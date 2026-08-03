@@ -1,14 +1,19 @@
 import { Router } from "express";
 import * as userController from "../controllers/user.controller.js";
+import { userAuth } from "../middlewares/auth.middleware.js";
 
 const userRouters = Router();
 
-userRouters.post("/register", userController.register);
+userRouters.get("/get-me", userAuth, userController.getMe);
 
-userRouters.post("/login", userController.login);
+userRouters.get("/info", userAuth, userController.userInfo);
 
-userRouters.get("/get-me", userController.getMe);
+userRouters.post("/update", userAuth, userController.userUpdate);
 
-userRouters.get("/logout", userController.logout);
+userRouters.post(
+  "/passwordUpdate",
+  userAuth,
+  userController.changeUserPassword,
+);
 
 export default userRouters;
