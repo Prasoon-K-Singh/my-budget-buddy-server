@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import userModel from "../models/user.model.js";
+import cloudinary from "../config/cloudinary.js";
 
 export async function getMe(req, res) {
   const user = await userModel.findById(req.user.id);
@@ -32,6 +33,7 @@ export async function userInfo(req, res) {
       dob: user.dob,
       occupation: user.occupation,
       gender: user.gender,
+      profileImg: user.profileImg,
     },
   });
 }
@@ -70,6 +72,7 @@ export async function userUpdate(req, res) {
       dob: user.dob,
       occupation: user.occupation,
       gender: user.gender,
+      profileImg: user.profileImg,
     },
   });
 }
@@ -123,9 +126,7 @@ export async function changeUserPassword(req, res) {
     await userModel.findByIdAndUpdate(
       id,
       {
-        $set: {
-          password: hashedPassword,
-        },
+        password: hashedPassword,
       },
       { returnDocument: "after" },
     );
@@ -133,6 +134,49 @@ export async function changeUserPassword(req, res) {
     res.status(200).json({
       success: true,
       message: "Password updated successfully",
+    });
+  } catch (err) {
+    console.log("err: ", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function uploadProfileImg(req, res) {
+  try {
+    const id = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload an image",
+      });
+    }
+
+    const user = await userModel.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.profileImgPublicId) {
+      await cloudinary.uploader.destroy(user.profileImgPublicId);
+    }
+
+    user.profileImg = req.file.path;
+    user.profileImgPublicId = req.file.filename;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile image updated successfully",
     });
   } catch (err) {
     console.log("err: ", err);

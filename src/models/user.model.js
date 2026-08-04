@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
     dob: { type: Number },
     occupation: { type: String },
     gender: { type: String, enum: ["male", "female", "other"] },
+    profileImg: { type: String },
+    profileImgPublicId: { type: String },
   },
   {
     timestamps: true,
