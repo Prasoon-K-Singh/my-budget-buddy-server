@@ -1,0 +1,9 @@
+import { Router } from "express";
+import { userAuth } from "../middlewares/auth.middleware";
+import * as accController from "../controllers/account.controller.js";
+
+const accRouters = Router();
+
+accRouters.post("/add", userAuth, accController.accAdd);
+
+export default accRouters;

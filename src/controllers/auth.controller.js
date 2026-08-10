@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import userModel from "../models/user.model.js";
+import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { config } from "../config/config.js";
 
@@ -8,7 +8,7 @@ export async function register(req, res) {
   const firstname = name?.firstname?.trim() || "";
   const lastname = name?.lastname?.trim() || "";
 
-  const isUserAlreadyRegister = await userModel.findOne({
+  const isUserAlreadyRegister = await User.findOne({
     $or: [{ username }, { email }],
   });
 
@@ -20,7 +20,7 @@ export async function register(req, res) {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await userModel.create({
+  const user = await User.create({
     name: {
       firstname,
       lastname,
@@ -59,7 +59,7 @@ export async function register(req, res) {
 export async function login(req, res) {
   const { username, password } = req.body;
 
-  const user = await userModel.findOne({
+  const user = await User.findOne({
     $or: [{ username }, { email: username }],
   });
 
