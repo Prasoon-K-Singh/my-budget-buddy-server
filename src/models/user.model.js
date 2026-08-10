@@ -15,12 +15,13 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, enum: ["male", "female", "other"] },
     profileImg: { type: String },
     profileImgPublicId: { type: String },
+    currency: { type: String, enum: ["inr", "dollar"], default: "inr" },
   },
   {
     timestamps: true,
   },
 );
 
-const userModel = mongoose.model("users", userSchema);
+const User = mongoose.model("User", userSchema);
 
-export default userModel;
+export default User;

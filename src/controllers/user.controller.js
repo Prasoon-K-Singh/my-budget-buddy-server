@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
-import userModel from "../models/user.model.js";
+import User from "../models/user.model.js";
 import cloudinary from "../config/cloudinary.js";
 
 export async function getMe(req, res) {
-  const user = await userModel.findById(req.user.id);
+  const user = await User.findById(req.user.id);
   res.status(200).json({
     success: true,
     message: "User fetched successfully",
@@ -21,7 +21,7 @@ export async function getMe(req, res) {
 }
 
 export async function userInfo(req, res) {
-  const user = await userModel.findById(req.user.id);
+  const user = await User.findById(req.user.id);
   res.status(200).json({
     success: true,
     message: "User fetched successfully",
@@ -34,13 +34,14 @@ export async function userInfo(req, res) {
       occupation: user.occupation,
       gender: user.gender,
       profileImg: user.profileImg,
+      currency: user.currency,
     },
   });
 }
 
 export async function userUpdate(req, res) {
   const id = req?.user?.id || "";
-  const { name, username, email, dob, occupation, gender } = req.body;
+  const { name, username, email, dob, occupation, gender, currency } = req.body;
 
   const update = {};
   if (name?.firstname !== undefined) {
@@ -54,8 +55,9 @@ export async function userUpdate(req, res) {
   if (dob !== undefined) update.dob = dob;
   if (occupation !== undefined) update.occupation = occupation;
   if (gender !== undefined) update.gender = gender;
+  if (currency !== undefined) update.currency = currency;
 
-  const user = await userModel.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     id,
     { $set: update },
     { returnDocument: "after" },
@@ -73,6 +75,7 @@ export async function userUpdate(req, res) {
       occupation: user.occupation,
       gender: user.gender,
       profileImg: user.profileImg,
+      currency: user.currency,
     },
   });
 }
@@ -89,7 +92,7 @@ export async function changeUserPassword(req, res) {
       });
     }
 
-    const user = await userModel.findById(id);
+    const user = await User.findById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -123,7 +126,7 @@ export async function changeUserPassword(req, res) {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await userModel.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       id,
       {
         password: hashedPassword,
@@ -156,7 +159,7 @@ export async function uploadProfileImg(req, res) {
       });
     }
 
-    const user = await userModel.findById(id);
+    const user = await User.findById(id);
 
     if (!user) {
       return res.status(404).json({
