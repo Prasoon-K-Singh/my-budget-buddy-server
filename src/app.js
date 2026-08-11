@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import authRouters from "./routes/auth.route.js";
 import userRouters from "./routes/user.route.js";
 import transacRoute from "./routes/transaction.route.js";
-import accRouters from "./routes/account.route";
+import accRouters from "./routes/account.route.js";
 import cors from "cors";
 
 const app = express();

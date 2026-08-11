@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { userAuth } from "../middlewares/auth.middleware";
+import { userAuth } from "../middlewares/auth.middleware.js";
 import * as tranController from "../controllers/transaction.controller.js";
 
 const transacRouters = Router();
