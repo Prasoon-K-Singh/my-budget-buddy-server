@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import authRouters from "./routes/auth.route.js";
 import userRouters from "./routes/user.route.js";
 import transacRoute from "./routes/transaction.route.js";
-import accRouters from "./routes/account.route";
+import accRouters from "./routes/account.route.js";
 import cors from "cors";
 
 const app = express();
@@ -19,7 +19,7 @@ app.use(
 
 app.use("/api/auth", authRouters);
 app.use("/api/user", userRouters);
-app.use("/api/tran", userRouters);
+app.use("/api/tran", transacRoute);
 app.use("/api/acc", accRouters);
 
 export default app;

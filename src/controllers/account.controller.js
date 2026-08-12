@@ -53,7 +53,7 @@ export async function accAdd(req, res) {
       isActive: accActiveStatus,
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Account created successfully",
       account,
