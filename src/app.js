@@ -19,7 +19,7 @@ app.use(
 
 app.use("/api/auth", authRouters);
 app.use("/api/user", userRouters);
-app.use("/api/tran", userRouters);
+app.use("/api/tran", transacRoute);
 app.use("/api/acc", accRouters);
 
 export default app;

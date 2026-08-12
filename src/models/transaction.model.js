@@ -5,16 +5,19 @@ const transactionSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
       required: true,
     },
     accountId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Account",
+      index: true,
       required: true,
     },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
+      index: true,
       required: true,
     },
     type: {
