@@ -9,10 +9,10 @@ export async function transacList(req, res) {
     const id = req.user.id;
 
     const accList = await Account.find(
-      { userId: id },
+      { userId: id, isActive: true },
       { _id: 1, name: 1, balance: 1, isActive: 1 },
     )
-      .sort({ name: 1 })
+      .sort({ createdAt: 1 })
       .lean();
 
     const data = {};
