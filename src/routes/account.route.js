@@ -6,6 +6,6 @@ const accRouters = Router();
 
 accRouters.post("/add", userAuth, accController.accAdd);
 
-accRouters.post("/delete", userAuth, accController.accDelete);
+accRouters.post("/delete/:_id", userAuth, accController.accDelete);
 
 export default accRouters;

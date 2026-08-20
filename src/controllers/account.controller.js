@@ -90,7 +90,7 @@ export async function accAdd(req, res) {
 export async function accDelete(req, res) {
   try {
     const userId = req.user.id;
-    const { accId } = req.body;
+    const accId = req.params._id;
 
     if (!accId) {
       return res.status(400).json({
