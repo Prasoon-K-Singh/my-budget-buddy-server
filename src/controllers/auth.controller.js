@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { config } from "../config/config.js";
+import Category from "../models/category.model.js";
 
 export async function register(req, res) {
   const { name, username, email, password, role = "user" } = req.body;
@@ -29,6 +30,13 @@ export async function register(req, res) {
     email,
     password: hashedPassword,
     role,
+  });
+
+  await Category.create({
+    userId: user._id,
+    name: "Miscellaneous",
+    isDefault: true,
+    isActive: true,
   });
 
   const token = jwt.sign(

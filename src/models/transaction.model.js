@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { PAYMENT_METHOD, PAYMENT_TYPE } from "../config/const.js";
 
 const transactionSchema = new mongoose.Schema(
   {
@@ -20,10 +21,18 @@ const transactionSchema = new mongoose.Schema(
       index: true,
       required: true,
     },
+    transactionNo: {
+      type: Number,
+      required: true,
+      unique: true,
+    },
     type: {
       type: String,
-      enum: ["debit", "credit", "transfer"],
       required: true,
+      enum: {
+        values: PAYMENT_TYPE,
+        message: "{VALUE} is not a valid payment type",
+      },
     },
     amount: {
       type: Number,
@@ -34,21 +43,28 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    merchantName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     transactionDate: {
       type: Number,
       required: true,
+      validate: {
+        validator: (value) => {
+          return value <= Date.now();
+        },
+        message: "Future dates are not allowed",
+      },
     },
     paymentMethod: {
       type: String,
-      enum: [
-        "cash",
-        "upi",
-        "debit_card",
-        "credit_card",
-        "net_banking",
-        "wallet",
-        "other",
-      ],
+      required: true,
+      enum: {
+        values: PAYMENT_METHOD,
+        message: "{VALUE} is not a valid payment method",
+      },
     },
     notes: {
       type: String,
