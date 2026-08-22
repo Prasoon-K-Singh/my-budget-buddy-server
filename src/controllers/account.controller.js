@@ -37,6 +37,7 @@ export async function accAdd(req, res) {
     const existingAccount = await Account.findOne({
       userId,
       name: accName.trim(),
+      isActive: true,
     });
 
     if (existingAccount) {
@@ -65,7 +66,7 @@ export async function accAdd(req, res) {
         message: "Account Updated successfully",
       });
     } else {
-      const account = await Account.create({
+      await Account.create({
         userId,
         name: accName.trim(),
         balance: accBalance,
