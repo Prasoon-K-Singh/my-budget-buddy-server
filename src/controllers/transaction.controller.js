@@ -33,8 +33,7 @@ export async function transacAdd(req, res) {
       !transAccount ||
       !transCategory ||
       !transMethod ||
-      !transMerchant ||
-      !transDesc
+      !transMerchant
     ) {
       return res.status(400).json({
         success: false,
@@ -136,14 +135,9 @@ export async function transacAdd(req, res) {
       );
     });
 
-    const transacList = await Transaction.find({ userId }).sort({
-      transactionDate: -1,
-    });
-
     return res.status(201).json({
       success: true,
       message: "Transaction added successfully",
-      data: transacList,
     });
   } catch (err) {
     console.log("transaction err: ", err);
@@ -176,26 +170,32 @@ export async function transacList(req, res) {
       .lean();
 
     const transacList = await Transaction.find({ userId: id })
-      .sort({ transactionDate: -1 })
+      .sort({ createdAt: -1 })
       .populate("accountId", "name")
       .populate("categoryId", "name")
       .lean();
 
     const totalBalance = calculateTotal(accList, "balance");
 
-    const totalExpense = calculateTotal(
+    const totalCredit = calculateTotal(
+      transacList,
+      "amount",
+      (transaction) => transaction.type === "credit",
+    );
+
+    const totalDebit = calculateTotal(
       transacList,
       "amount",
       (transaction) => transaction.type === "debit",
     );
 
-    const balList = { totalBalance, totalExpense };
+    const balList = { totalBalance, totalCredit, totalDebit };
 
     const data = { accList, catList, transacList, balList };
 
     return res.status(200).json({
       success: true,
-      message: "Accounts fetched successfully",
+      message: "Transactions fetched successfully",
       data,
     });
   } catch (err) {
