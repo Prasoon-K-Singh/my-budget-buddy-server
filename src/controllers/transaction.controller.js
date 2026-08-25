@@ -4,6 +4,7 @@ import Category from "../models/category.model.js";
 import Transaction from "../models/transaction.model.js";
 import {
   adjustAmount,
+  adjustAmountAfterTranDel,
   calculateTotal,
   getNextTransactionNo,
 } from "../services/transactions.service.js";
@@ -129,6 +130,7 @@ export async function transacAdd(req, res) {
             merchantName: transMerchant.trim(),
             description: transDesc.trim(),
             notes: transNotes.trim(),
+            isActive: true,
           },
         ],
         { session },
@@ -169,7 +171,10 @@ export async function transacList(req, res) {
       .sort({ createdAt: 1 })
       .lean();
 
-    const transacList = await Transaction.find({ userId: id })
+    const transacList = await Transaction.find({
+      userId: id,
+      isActive: true,
+    })
       .sort({ createdAt: -1 })
       .populate("accountId", "name")
       .populate("categoryId", "name")
@@ -180,13 +185,15 @@ export async function transacList(req, res) {
     const totalCredit = calculateTotal(
       transacList,
       "amount",
-      (transaction) => transaction.type === "credit",
+      (transaction) =>
+        transaction.type === "credit" && transaction.isActive === true,
     );
 
     const totalDebit = calculateTotal(
       transacList,
       "amount",
-      (transaction) => transaction.type === "debit",
+      (transaction) =>
+        transaction.type === "debit" && transaction.isActive === true,
     );
 
     const balList = { totalBalance, totalCredit, totalDebit };
@@ -204,5 +211,69 @@ export async function transacList(req, res) {
       success: false,
       message: "Failed to fetch list",
     });
+  }
+}
+
+export async function transacDel(req, res) {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+    const id = req.user.id;
+    const tranId = req.params._id;
+    if (!tranId) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Transaction id is required",
+      });
+    }
+    const delTrans = await Transaction.findOne({
+      _id: tranId,
+      userId: id,
+      isActive: true,
+    }).session(session);
+    if (!delTrans) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+    const findAcc = await Account.findOne({
+      _id: delTrans.accountId,
+      userId: id,
+      isActive: true,
+    }).session(session);
+    if (findAcc) {
+      // adject account balance
+      const newBal = adjustAmountAfterTranDel(
+        findAcc.balance,
+        delTrans.type,
+        delTrans.amount,
+      );
+      findAcc.balance = newBal;
+      await findAcc.save({ session });
+    }
+    delTrans.isActive = false;
+    await delTrans.save({ session });
+    await session.commitTransaction();
+    return res.status(200).json({
+      success: true,
+      message: "Transaction deleted successfully",
+    });
+  } catch (err) {
+    if (session?.inTransaction()) {
+      await session.abortTransaction();
+    }
+    console.log("transacDel err: ", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to Delete transaction",
+    });
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 }
