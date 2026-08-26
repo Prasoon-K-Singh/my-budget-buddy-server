@@ -8,4 +8,6 @@ transacRouters.post("/add", userAuth, tranController.transacAdd);
 
 transacRouters.get("/list", userAuth, tranController.transacList);
 
+transacRouters.post("/delete/:_id", userAuth, tranController.transacDel);
+
 export default transacRouters;
