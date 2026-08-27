@@ -37,7 +37,7 @@ export const calculateTotal = (list = [], field, filter = () => true) => {
   }, 0);
 };
 
-export function adjustAmountAfterTranDel(balance, transType, transAmount) {
+export function adjustExistingTransAmount(balance, transType, transAmount) {
   const newBal = 0;
   if (transType === "credit") {
     return balance - transAmount;

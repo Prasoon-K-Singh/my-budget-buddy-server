@@ -4,7 +4,7 @@ import Category from "../models/category.model.js";
 import Transaction from "../models/transaction.model.js";
 import {
   adjustAmount,
-  adjustAmountAfterTranDel,
+  adjustExistingTransAmount,
   calculateTotal,
   getNextTransactionNo,
 } from "../services/transactions.service.js";
@@ -34,7 +34,8 @@ export async function transacAdd(req, res) {
       !transAccount ||
       !transCategory ||
       !transMethod ||
-      !transMerchant
+      typeof transMerchant !== "string" ||
+      !transMerchant.trim()
     ) {
       return res.status(400).json({
         success: false,
@@ -247,7 +248,7 @@ export async function transacDel(req, res) {
     }).session(session);
     if (findAcc) {
       // adject account balance
-      const newBal = adjustAmountAfterTranDel(
+      const newBal = adjustExistingTransAmount(
         findAcc.balance,
         delTrans.type,
         delTrans.amount,
@@ -270,6 +271,190 @@ export async function transacDel(req, res) {
     return res.status(500).json({
       success: false,
       message: "Failed to Delete transaction",
+    });
+  } finally {
+    if (session) {
+      session.endSession();
+    }
+  }
+}
+
+export async function transacEdit(req, res) {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+    const id = req.user.id;
+    const tranId = req.params._id;
+    if (!tranId) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Transaction id is required",
+      });
+    }
+    const editTrans = await Transaction.findOne({
+      _id: tranId,
+      userId: id,
+      isActive: true,
+    }).session(session);
+    if (!editTrans) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+    const {
+      transDate,
+      transAmount,
+      transType,
+      transAccount,
+      transCategory,
+      transMethod,
+      transMerchant,
+      transDesc,
+      transNotes,
+    } = req.body;
+    if (
+      transDate === undefined ||
+      transDate === null ||
+      transAmount === undefined ||
+      !transType ||
+      !transAccount ||
+      !transCategory ||
+      !transMethod ||
+      typeof transMerchant !== "string" ||
+      !transMerchant.trim()
+    ) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Please Provide all the required information",
+      });
+    }
+    if (
+      typeof transDate !== "number" ||
+      !Number.isFinite(transDate) ||
+      Number.isNaN(new Date(transDate).getTime())
+    ) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction date",
+      });
+    }
+    if (transDate > Date.now()) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Transaction date cannot be in the future",
+      });
+    }
+    if (
+      typeof transAmount !== "number" ||
+      !Number.isFinite(transAmount) ||
+      transAmount <= 0
+    ) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be a greater than 0",
+      });
+    }
+    if (!PAYMENT_TYPE.includes(transType)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction type",
+      });
+    }
+    if (!PAYMENT_METHOD.includes(transMethod)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method",
+      });
+    }
+    const account = await Account.findOne({
+      _id: transAccount,
+      userId: id,
+      isActive: true,
+    }).session(session);
+    if (!account) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: "Account does not exist",
+      });
+    }
+    const category = await Category.findOne({
+      _id: transCategory,
+      userId: id,
+      isActive: true,
+    }).session(session);
+    if (!category) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: "Category does not exist",
+      });
+    }
+    const findAcc = await Account.findOne({
+      _id: editTrans.accountId,
+      userId: id,
+    }).session(session);
+    if (!findAcc) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Cannot update this transaction",
+      });
+    }
+    // logic to update amount effectively
+    if (String(editTrans.accountId) === String(transAccount)) {
+      const revertedBalance = adjustExistingTransAmount(
+        account.balance,
+        editTrans.type,
+        editTrans.amount,
+      );
+      account.balance = adjustAmount(revertedBalance, transType, transAmount);
+      await account.save({ session });
+    } else {
+      // restore old account
+      findAcc.balance = adjustExistingTransAmount(
+        findAcc.balance,
+        editTrans.type,
+        editTrans.amount,
+      );
+      await findAcc.save({ session });
+      // apply transaction to new account
+      account.balance = adjustAmount(account.balance, transType, transAmount);
+      await account.save({ session });
+    }
+    editTrans.transactionDate = transDate;
+    editTrans.amount = transAmount;
+    editTrans.type = transType;
+    editTrans.accountId = transAccount;
+    editTrans.categoryId = transCategory;
+    editTrans.paymentMethod = transMethod;
+    editTrans.merchantName = transMerchant?.trim() || "";
+    editTrans.description = transDesc?.trim() || "";
+    editTrans.notes = transNotes?.trim() || "";
+    await editTrans.save({ session });
+    await session.commitTransaction();
+    return res.status(200).json({
+      success: true,
+      message: "Transaction updated successfully",
+    });
+  } catch (err) {
+    if (session?.inTransaction()) {
+      await session.abortTransaction();
+    }
+    console.log("transacEdit err: ", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update transaction",
     });
   } finally {
     if (session) {
