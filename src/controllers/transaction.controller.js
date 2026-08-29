@@ -157,6 +157,9 @@ export async function transacAdd(req, res) {
 export async function transacList(req, res) {
   try {
     const id = req.user.id;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     const accList = await Account.find(
       { userId: id, isActive: true },
@@ -172,14 +175,23 @@ export async function transacList(req, res) {
       .sort({ createdAt: 1 })
       .lean();
 
-    const transacList = await Transaction.find({
-      userId: id,
-      isActive: true,
-    })
-      .sort({ createdAt: -1 })
-      .populate("accountId", "name")
-      .populate("categoryId", "name")
-      .lean();
+    const [transacList, totalCount] = await Promise.all([
+      Transaction.find({
+        userId: id,
+        isActive: true,
+      })
+        .sort({ createdAt: -1 })
+        .populate("accountId", "name")
+        .populate("categoryId", "name")
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      Transaction.countDocuments({
+        userId: id,
+        isActive: true,
+      }),
+    ]);
 
     const totalBalance = calculateTotal(accList, "balance");
 
@@ -197,9 +209,15 @@ export async function transacList(req, res) {
         transaction.type === "debit" && transaction.isActive === true,
     );
 
+    const pagination = {
+      page,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    };
+
     const balList = { totalBalance, totalCredit, totalDebit };
 
-    const data = { accList, catList, transacList, balList };
+    const data = { accList, catList, transacList, balList, pagination };
 
     return res.status(200).json({
       success: true,
