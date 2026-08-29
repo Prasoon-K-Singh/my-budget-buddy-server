@@ -161,6 +161,29 @@ export async function transacList(req, res) {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const filter = {
+      userId: id,
+      isActive: true,
+    };
+    if (req.query.fromDate && req.query.toDate) {
+      filter.transactionDate = {
+        $gte: Number(req.query.fromDate),
+        $lte: Number(req.query.toDate),
+      };
+    }
+    if (req.query.account) {
+      filter.accountId = req.query.account;
+    }
+    if (req.query.category) {
+      filter.categoryId = req.query.category;
+    }
+    if (req.query.method) {
+      filter.paymentMethod = req.query.method;
+    }
+    if (req.query.type) {
+      filter.type = req.query.type;
+    }
+
     const accList = await Account.find(
       { userId: id, isActive: true },
       { _id: 1, name: 1, balance: 1, isActive: 1 },
@@ -176,10 +199,7 @@ export async function transacList(req, res) {
       .lean();
 
     const [transacList, totalCount] = await Promise.all([
-      Transaction.find({
-        userId: id,
-        isActive: true,
-      })
+      Transaction.find(filter)
         .sort({ createdAt: -1 })
         .populate("accountId", "name")
         .populate("categoryId", "name")
@@ -187,10 +207,7 @@ export async function transacList(req, res) {
         .limit(limit)
         .lean(),
 
-      Transaction.countDocuments({
-        userId: id,
-        isActive: true,
-      }),
+      Transaction.countDocuments(filter),
     ]);
 
     const totalBalance = calculateTotal(accList, "balance");
