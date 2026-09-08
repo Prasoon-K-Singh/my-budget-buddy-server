@@ -13,13 +13,10 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    icon: {
-      type: String,
-      default: "circle",
-    },
-    color: {
-      type: String,
-      default: "#64748b",
+    budget: {
+      type: Number,
+      required: true,
+      default: 1000,
     },
     isDefault: {
       type: Boolean,
@@ -28,6 +25,10 @@ const categorySchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    isIncluded: {
+      type: Boolean,
+      default: false,
     },
   },
   {
