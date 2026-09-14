@@ -5,6 +5,7 @@ import userRouters from "./routes/user.route.js";
 import transacRoute from "./routes/transaction.route.js";
 import accRouters from "./routes/account.route.js";
 import catRouters from "./routes/category.route.js";
+import dashboardRouters from "./routes/dashboard.route.js";
 import cors from "cors";
 
 const app = express();
@@ -23,5 +24,5 @@ app.use("/api/user", userRouters);
 app.use("/api/tran", transacRoute);
 app.use("/api/acc", accRouters);
 app.use("/api/cat", catRouters);
-
+app.use("/api/dashboard", dashboardRouters);
 export default app;

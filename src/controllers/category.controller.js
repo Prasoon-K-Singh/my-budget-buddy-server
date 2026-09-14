@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
 import { STATUS, YES_NO_SELECT } from "../config/const.js";
 import Category from "../models/category.model.js";
-import Transaction from "../models/transaction.model.js";
+import { getCategorySpending } from "../services/category.service.js";
 
 export async function getBudget(req, res) {
   try {
@@ -205,133 +204,7 @@ export async function getCategoryExpenses(req, res) {
   try {
     const userId = req.user.id;
 
-    const now = new Date();
-
-    const startOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1,
-    ).getTime();
-
-    const startOfNextMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-    ).getTime();
-
-    const expenses = await Category.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          isActive: true,
-          isIncluded: true,
-        },
-      },
-
-      {
-        $lookup: {
-          from: "transactions",
-          let: {
-            categoryId: "$_id",
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    {
-                      $eq: ["$categoryId", "$$categoryId"],
-                    },
-                    {
-                      $eq: ["$userId", new mongoose.Types.ObjectId(userId)],
-                    },
-                  ],
-                },
-
-                type: "debit",
-
-                transactionDate: {
-                  $gte: startOfMonth,
-                  $lt: startOfNextMonth,
-                },
-              },
-            },
-
-            {
-              $group: {
-                _id: null,
-                expense: {
-                  $sum: "$amount",
-                },
-              },
-            },
-          ],
-          as: "transactions",
-        },
-      },
-
-      {
-        $addFields: {
-          expense: {
-            $ifNull: [
-              {
-                $arrayElemAt: ["$transactions.expense", 0],
-              },
-              0,
-            ],
-          },
-        },
-      },
-
-      {
-        $project: {
-          _id: 0,
-
-          categoryId: "$_id",
-
-          categoryName: "$name",
-
-          budget: 1,
-
-          expense: 1,
-
-          remaining: {
-            $subtract: ["$budget", "$expense"],
-          },
-
-          expensePercentage: {
-            $min: [
-              100,
-              {
-                $round: [
-                  {
-                    $cond: [
-                      { $gt: ["$budget", 0] },
-                      {
-                        $multiply: [
-                          {
-                            $divide: ["$expense", "$budget"],
-                          },
-                          100,
-                        ],
-                      },
-                      0,
-                    ],
-                  },
-                  2,
-                ],
-              },
-            ],
-          },
-        },
-      },
-
-      {
-        $sort: {
-          expense: -1,
-        },
-      },
-    ]);
+    const expenses = await getCategorySpending(userId, true);
 
     const overall = {};
     overall.totalBudget = expenses.reduce((acc, curr) => acc + curr.budget, 0);
