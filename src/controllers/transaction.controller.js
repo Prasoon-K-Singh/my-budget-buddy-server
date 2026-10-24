@@ -154,6 +154,134 @@ export async function transacAdd(req, res) {
   }
 }
 
+export async function selfTransfer(req, res) {
+  const { transferFrom, transferTo, transferBalance } = req.body;
+  const userId = req.user.id;
+
+  if (!transferFrom || !transferTo || transferBalance === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required",
+    });
+  }
+
+  if (
+    !mongoose.isValidObjectId(transferFrom) ||
+    !mongoose.isValidObjectId(transferTo)
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid account ID",
+    });
+  }
+
+  if (transferFrom === transferTo) {
+    return res.status(400).json({
+      success: false,
+      message: "Source and destination accounts must be different",
+    });
+  }
+
+  const amount = Number(transferBalance);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Transfer amount must be greater than 0",
+    });
+  }
+
+  if (Math.round(amount * 100) !== amount * 100) {
+    return res.status(400).json({
+      success: false,
+      message: "Transfer amount can have at most 2 decimal places",
+    });
+  }
+
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      const accounts = await Account.find({
+        _id: { $in: [transferFrom, transferTo] },
+        userId,
+        isActive: true,
+      }).session(session);
+
+      if (accounts.length !== 2) {
+        const error = new Error(
+          "One or both accounts were not found or are inactive",
+        );
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const fromAccount = accounts.find(
+        (account) => account._id.toString() === transferFrom,
+      );
+
+      const toAccount = accounts.find(
+        (account) => account._id.toString() === transferTo,
+      );
+
+      if (Number(fromAccount.balance) < amount) {
+        const error = new Error("Insufficient account balance");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const debitResult = await Account.updateOne(
+        {
+          _id: transferFrom,
+          userId,
+          isActive: true,
+          balance: { $gte: amount },
+        },
+        { $inc: { balance: -amount } },
+        { session },
+      );
+
+      if (debitResult.modifiedCount !== 1) {
+        const error = new Error(
+          "Insufficient balance or source account changed",
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const creditResult = await Account.updateOne(
+        {
+          _id: transferTo,
+          userId,
+          isActive: true,
+        },
+        { $inc: { balance: amount } },
+        { session },
+      );
+
+      if (creditResult.modifiedCount !== 1) {
+        const error = new Error("Destination account could not be updated");
+        error.statusCode = 409;
+        throw error;
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Amount transferred successfully",
+    });
+  } catch (error) {
+    console.error("Self transfer error:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.statusCode ? error.message : "Internal server error",
+    });
+  } finally {
+    await session.endSession();
+  }
+}
+
 export async function transacList(req, res) {
   try {
     const id = req.user.id;

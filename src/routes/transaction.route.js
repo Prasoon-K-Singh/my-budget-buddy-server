@@ -6,6 +6,8 @@ const transacRouters = Router();
 
 transacRouters.post("/add", userAuth, tranController.transacAdd);
 
+transacRouters.post("/self-transfer", userAuth, tranController.selfTransfer);
+
 transacRouters.get("/list", userAuth, tranController.transacList);
 
 transacRouters.post("/delete/:_id", userAuth, tranController.transacDel);
