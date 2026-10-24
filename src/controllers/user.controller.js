@@ -40,44 +40,91 @@ export async function userInfo(req, res) {
 }
 
 export async function userUpdate(req, res) {
-  const id = req?.user?.id || "";
-  const { name, username, email, dob, occupation, gender, currency } = req.body;
+  try {
+    const id = req?.user?.id;
 
-  const update = {};
-  if (name?.firstname !== undefined) {
-    update["name.firstname"] = name.firstname.trim();
+    const { name, username, email, dob, occupation, gender, currency } =
+      req.body;
+
+    const isUserExists = await User.findOne({
+      _id: { $ne: id },
+      $or: [
+        ...(username !== undefined ? [{ username }] : []),
+        ...(email !== undefined ? [{ email }] : []),
+      ],
+    });
+
+    if (isUserExists) {
+      return res.status(409).json({
+        message:
+          isUserExists.username === username && username !== undefined
+            ? "Username already exists"
+            : "Email already exists",
+        success: false,
+      });
+    }
+
+    const update = {};
+
+    if (name?.firstname !== undefined) {
+      update["name.firstname"] = name.firstname.trim();
+    }
+
+    if (name?.lastname !== undefined) {
+      update["name.lastname"] = name.lastname.trim();
+    }
+
+    if (username !== undefined) update.username = username.trim();
+    if (email !== undefined) update.email = email.trim();
+    if (dob !== undefined) update.dob = dob;
+    if (occupation !== undefined) update.occupation = occupation;
+    if (gender !== undefined) update.gender = gender;
+    if (currency !== undefined) update.currency = currency;
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: update },
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile Updated Successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        dob: user.dob,
+        occupation: user.occupation,
+        gender: user.gender,
+        profileImg: user.profileImg,
+        currency: user.currency,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Username or email already exists",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
-  if (name?.lastname !== undefined) {
-    update["name.lastname"] = name.lastname.trim();
-  }
-  if (username !== undefined) update.username = username;
-  if (email !== undefined) update.email = email;
-  if (dob !== undefined) update.dob = dob;
-  if (occupation !== undefined) update.occupation = occupation;
-  if (gender !== undefined) update.gender = gender;
-  if (currency !== undefined) update.currency = currency;
-
-  const user = await User.findByIdAndUpdate(
-    id,
-    { $set: update },
-    { returnDocument: "after" },
-  );
-
-  res.status(200).json({
-    success: true,
-    message: "User Updated Successfully",
-    user: {
-      id: user._id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      dob: user.dob,
-      occupation: user.occupation,
-      gender: user.gender,
-      profileImg: user.profileImg,
-      currency: user.currency,
-    },
-  });
 }
 
 export async function changeUserPassword(req, res) {

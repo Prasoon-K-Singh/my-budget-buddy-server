@@ -16,6 +16,7 @@ export async function register(req, res) {
   if (isUserAlreadyRegister) {
     return res.status(409).json({
       message: "username or email already exists",
+      success: false,
     });
   }
 
@@ -50,7 +51,8 @@ export async function register(req, res) {
   res.cookie("token", token);
 
   res.status(201).json({
-    message: "User registered successfully",
+    message: "Registered successfully",
+    success: true,
     user: {
       id: user._id,
       name: {
@@ -74,6 +76,7 @@ export async function login(req, res) {
   if (!user) {
     return res.status(401).json({
       message: "Invalid credentials",
+      success: false,
     });
   }
 
@@ -82,6 +85,7 @@ export async function login(req, res) {
   if (!isPassValid) {
     return res.status(401).json({
       message: "Invalid credentials",
+      success: false,
     });
   }
 
@@ -96,7 +100,8 @@ export async function login(req, res) {
   res.cookie("token", token);
 
   res.status(200).json({
-    message: "User logged in successfully",
+    message: "Logged in successfully",
+    success: true,
     user: {
       id: user._id,
       name: {
