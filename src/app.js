@@ -6,12 +6,14 @@ import transacRoute from "./routes/transaction.route.js";
 import accRouters from "./routes/account.route.js";
 import catRouters from "./routes/category.route.js";
 import dashboardRouters from "./routes/dashboard.route.js";
+import billRouters from "./routes/bill.route.js";
 import cors from "cors";
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -25,4 +27,5 @@ app.use("/api/tran", transacRoute);
 app.use("/api/acc", accRouters);
 app.use("/api/cat", catRouters);
 app.use("/api/dashboard", dashboardRouters);
+app.use("/api/bill", billRouters);
 export default app;
