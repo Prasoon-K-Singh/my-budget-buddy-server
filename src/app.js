@@ -18,7 +18,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://my-budget-buddy-client.vercel.app/",
+      "https://my-budget-buddy-client.vercel.app",
     ],
     credentials: true,
   }),
