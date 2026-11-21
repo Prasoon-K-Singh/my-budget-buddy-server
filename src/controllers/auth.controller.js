@@ -48,7 +48,12 @@ export async function register(req, res) {
     config.JWT_SECRET,
   );
 
-  res.cookie("token", token);
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+  });
 
   res.status(201).json({
     message: "Registered successfully",
@@ -97,7 +102,12 @@ export async function login(req, res) {
     config.JWT_SECRET,
   );
 
-  res.cookie("token", token);
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+  });
 
   res.status(200).json({
     message: "Logged in successfully",
