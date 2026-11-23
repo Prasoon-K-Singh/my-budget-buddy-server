@@ -47,7 +47,7 @@ export async function getCategorySpending(userId, checkIncluded) {
                 },
 
                 type: "debit",
-
+                isActive: true,
                 transactionDate: {
                   $gte: startOfMonth,
                   $lt: startOfNextMonth,

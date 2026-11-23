@@ -23,7 +23,7 @@ export async function getNextTransactionNo(session) {
 export function adjustAmount(balance, transType, transAmount) {
   const newBal = 0;
   if (transType === "debit") {
-    return balance - transAmount;
+    return balance - transAmount >= 0 ? balance - transAmount : -1;
   }
   if (transType === "credit") {
     return balance + transAmount;

@@ -112,6 +112,12 @@ export async function transacAdd(req, res) {
 
       const newBal = adjustAmount(account.balance, transType, transAmount);
 
+      if (newBal === -1) {
+        const error = new Error("Insufficient account balance");
+        error.status = 400;
+        throw error;
+      }
+
       account.balance = newBal;
       await account.save({ session });
 
